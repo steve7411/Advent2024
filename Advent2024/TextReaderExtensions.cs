@@ -181,7 +181,7 @@ public static class TextReaderExtensions {
             buffer[++idx] = parseResult.parsed;
         buffer[++idx] = parseResult.parsed;
         r.ConsumeFullNewLine(parseResult.lastRead);
-        return buffer[..++idx];
+        return buffer[..(idx + 1)];
     }
 
     public static IEnumerable<T> ReadAllNumbersInLine<T>(this TextReader r) where T : ISpanParsable<T> {

@@ -28,6 +28,8 @@ public abstract class DayBase : IDay {
         var dayNum = (typeName[^2] & 0xF) * 10 + (typeName[^1] & 0xF);
         using var inStream = InputDownloader.DownloadInput(dayNum);
         var path = GetDataFilePath();
+        var dir = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(dir);
         using (var writer = new StreamWriter(path, false)) {
             using var reader = new StreamReader(inStream);
             for (string? line; (line = reader.ReadLine()) != null;) {
@@ -37,7 +39,7 @@ public abstract class DayBase : IDay {
             }
                 
         }
-        ReadOnlySpan<string> paths = [Path.GetDirectoryName(path)!, "..", "..", "..", "..", typeName, "Data.txt"];
+        ReadOnlySpan<string> paths = [dir, "..", "..", "..", "..", typeName, "Data.txt"];
         File.Copy(path, Path.Combine(paths), true);
     }
 }
