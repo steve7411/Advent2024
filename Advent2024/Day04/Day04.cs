@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Advent2024.Day04;
 
@@ -23,7 +22,7 @@ internal class Day04 : DayBase {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private int IsLinearMatch(ReadOnlySpan<byte> str, Vector2D<int> pos, Vector2D<int> dir) {
         var end = pos + dir * (str.Length - 1);
-        if (end.x < 0 | end.y < 0 | end.x >= width | end.y >= height)
+        if ((uint)end.x >= (uint)width | (uint)end.y >= (uint)height)
             return 0;
 
         var delta = dir.y * width + dir.x;
