@@ -16,8 +16,8 @@ internal class Day02 : DayBase {
             if (validNoChange == 1)
                 continue;
             
-            var (testIdx, delta) = failIdx == 1 ? (failIdx + 1, -1) : (failIdx, -2);
-            var (isSafe1Remove, failIdx2) = IsValid(span, testIdx, span[testIdx + delta], expectedSign);
+            var (nextIdx, prevIdx) = failIdx == 1 ? (failIdx + 1, failIdx) : (failIdx, failIdx - 2);
+            var (isSafe1Remove, failIdx2) = IsValid(span, nextIdx, span[prevIdx], expectedSign);
             if (failIdx + 1 >= failIdx2)
                 (isSafe1Remove, _) = IsValid(span, failIdx + 1, span[failIdx - 1], expectedSign);
             safeCount1Removal += isSafe1Remove;
