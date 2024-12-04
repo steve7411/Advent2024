@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Advent2024;
 
@@ -234,6 +235,7 @@ public static class TextReaderExtensions {
         return buffer[..++idx];
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void ConsumeFullNewLine(this TextReader r, int previousCharacterRead) {
         if (Environment.NewLine.Length > 1 && previousCharacterRead == Environment.NewLine[0]) {
             var newLineIndex = 1;
