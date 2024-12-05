@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using System.Runtime.Intrinsics.X86;
 
 namespace Advent2024.Day05;
 
@@ -25,23 +24,53 @@ internal class Day05 : DayBase {
         }
     }
 
+    private int GetSortedMid(Span<ulong> set, byte[] update) {
+        Span<ushort> counts = stackalloc ushort[100];
+        Span<ulong> allDescendendents = stackalloc ulong[2];
+        foreach (var n in update) {
+            var adjOffset = n << 1;
+            for (var i = 0; i < 2; ++i) {
+                var bits = adjacency[adjOffset + i];
+                var idxOffset = i << 6;
+                foreach (var bit in new BitEnumerable<ulong>(bits & set[i]))
+                    ++counts[idxOffset | BitOperations.TrailingZeroCount(bit)];
+                allDescendendents[i] |= bits;
+            }
+        }
+
+        var midIdx = update.Length >>> 1;
+        var diff0 = set[0] ^ allDescendendents[0] & set[0];
+        var next = diff0 == 0 ? 64 | BitOperations.TrailingZeroCount(set[1] ^ allDescendendents[1] & set[1]) : BitOperations.TrailingZeroCount(diff0);
+        var curr = -1;
+        for (var j = midIdx; j >= 0; --j) {
+            curr = next;
+            var adjOffset = curr << 1;
+            for (var i = 0; i < 2; ++i) {
+                var bits = adjacency[adjOffset + i];
+                var idxOffset = i << 6;
+                foreach (var bit in new BitEnumerable<ulong>(bits & set[i])) {
+                    var idx = idxOffset | BitOperations.TrailingZeroCount(bit);
+                    if (--counts[idx] == 0)
+                        next = idx;
+                }
+                allDescendendents[i] |= bits;
+            }
+        }
+        return curr;
+    }
+
     public override object? Part1() {
-        Span<ulong> currentSet = stackalloc ulong[2];
+        Span<ulong> set = stackalloc ulong[2];
         var sum = 0;
         foreach (var update in updates) {
-            (currentSet[0], currentSet[1]) = (0, 0);
+            (set[0], set[1]) = (0, 0);
             for (var i = update.Length - 1; i >= 0; --i) {
                 var curr = update[i];
-
                 var offset = curr << 1;
-                if ((adjacency[offset] & currentSet[0]) != currentSet[0])
+                if ((adjacency[offset] & set[0]) != set[0] || (adjacency[offset + 1] & set[1]) != set[1])
                     goto skip;
-                if ((adjacency[offset + 1] & currentSet[1]) != currentSet[1])
-                    goto skip;
-
-                currentSet[curr >>> 6] |= 1UL << curr;
+                set[curr >>> 6] |= 1UL << curr;
             }
-
             sum += update[update.Length >>> 1];
         skip:;
         }
@@ -52,69 +81,25 @@ internal class Day05 : DayBase {
 
     public override object? Part2() {
         Span<ulong> currentSet = stackalloc ulong[2];
-        Span<ulong> prereqs = stackalloc ulong[2];
         var sum = 0;
         foreach (var update in updates) {
             (currentSet[0], currentSet[1]) = (0, 0);
-            (prereqs[0], prereqs[1]) = (0, 0);
             var isOrdered = true;
             var midIdx = update.Length >>> 1;
 
             for (var i = update.Length - 1; i >= 0; --i) {
                 var curr = update[i];
-
                 var offset = curr << 1;
                 isOrdered &= (adjacency[offset] & currentSet[0]) == currentSet[0];
                 isOrdered &= (adjacency[offset + 1] & currentSet[1]) == currentSet[1];
-
-                prereqs[0] |= adjacency[offset];
-                prereqs[1] |= adjacency[offset + 1];
-
                 currentSet[curr >>> 6] |= 1UL << curr;
             }
-            if (isOrdered)
-                continue;
 
-            prereqs[0] &= currentSet[0];
-            prereqs[1] &= currentSet[1];
-            sum += GetSortedMid(currentSet, prereqs, update);
-        skip:;
+            if (!isOrdered)
+                sum += GetSortedMid(currentSet, update);
         }
 
         Console.WriteLine($"The sum of unsorted center values is {sum}");
         return sum;
-    }
-
-    private void BuildPrereqs(Span<ulong> set, Span<ulong> prereqs) {
-        (prereqs[0], prereqs[1]) = (0, 0);
-        for (var offset = 0; offset <= 64; offset += 64) {
-            foreach (var bit in new BitEnumerable<ulong>(set[offset >>> 6])) {
-                var n = offset | BitOperations.TrailingZeroCount(bit);
-                var adjOffset = n << 1;
-                prereqs[0] |= adjacency[adjOffset];
-                prereqs[1] |= adjacency[adjOffset + 1];
-            }
-        }
-        prereqs[0] &= set[0];
-        prereqs[1] &= set[1];
-    }
-
-    private int GetSortedMid(Span<ulong> set, Span<ulong> prereqs, byte[] update) {
-        var next = -1;
-        var midIdx = update.Length >>> 1;
-        for (var i = 0; i <= midIdx; ++i) {
-            for (var offset = 0; offset <= 64; offset += 64) {
-                var idx = offset >>> 6;
-                var diff = set[idx] ^ prereqs[idx];
-                if (diff != 0) {
-                    set[idx] ^= diff;
-                    next = offset | BitOperations.TrailingZeroCount(diff);
-                    BuildPrereqs(set, prereqs);
-                    goto skip;
-                }
-            }
-        skip:;
-        }
-        return next;
     }
 }
