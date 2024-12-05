@@ -35,15 +35,12 @@ internal class Day04 : DayBase {
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private int IsCrossMas(int idx) {
-        const uint CROSS_MASK = 0xFF_00_FF;
-        const uint SWAP = 0x1E_00_1E;
+        const uint MASK = 0xFF_00_FF;
+        const uint DIFF = 0x1E_00_1E;
 
-        var above = Unsafe.As<byte, uint>(ref grid[idx - width - 1]) & CROSS_MASK;
-        if (above is not (0x4D_00_4D or 0x4D_00_53 or 0x53_00_4D or 0x53_00_53))
-            return 0;
-
-        var below = Unsafe.As<byte, uint>(ref grid[idx + width - 1]) & CROSS_MASK;
-        return ((above << 16 | above >>> 16) & CROSS_MASK ^ SWAP) == below ? 1 : 0;
+        var above = Unsafe.As<byte, uint>(ref grid[idx - width - 1]);
+        var below = Unsafe.As<byte, uint>(ref grid[idx + width - 1]);
+        return (((above << 16 | above >>> 16) ^ below) & MASK) == DIFF ? 1 : 0;
     }
 
     public override object? Part1() {
