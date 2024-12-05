@@ -33,14 +33,16 @@ internal class Day03 : DayBase {
         return l * r;
     }
 
-    public override object? Part1() {
+    public override object? Part1(bool print = true) {
         var total = sumOfProducts[0] + sumOfProducts[1];
-        Console.WriteLine($"The sum of all products is: {total}");
+        if (print)
+            Console.WriteLine($"The sum of all products is: {total}");
         return total;
     }
 
-    public override object? Part2() {
-        Console.WriteLine($"The sum of enabled products is: {sumOfProducts[1]}");
+    public override object? Part2(bool print = true) {
+        if (print)
+            Console.WriteLine($"The sum of enabled products is: {sumOfProducts[1]}");
         return sumOfProducts[1];
     }
 }

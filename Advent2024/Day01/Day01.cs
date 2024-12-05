@@ -13,15 +13,16 @@ internal class Day01 : DayBase {
         Array.Sort(right);
     }
 
-    public override object? Part1() {
+    public override object? Part1(bool print = true) {
         var diff = 0L;
         for (var i = 0; i < left.Length; ++i)
             diff += Math.Abs(left[i] - right[i]);
-        Console.WriteLine($"The total difference is: {diff}");
+        if (print)
+            Console.WriteLine($"The total difference is: {diff}");
         return diff;
     }
 
-    public override object? Part2() {
+    public override object? Part2(bool print = true) {
         var score = 0L;
         for (int lIdx = 0, rIdx = 0; lIdx < left.Length & rIdx < right.Length;) {
             var (l, r) = (left[lIdx], right[rIdx]);
@@ -32,7 +33,8 @@ internal class Day01 : DayBase {
                 ++rIdx;
             }
         }
-        Console.WriteLine($"The total similarity score is: {score}");
+        if (print)
+            Console.WriteLine($"The total similarity score is: {score}");
         return score;
     }
 }

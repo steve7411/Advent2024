@@ -43,7 +43,7 @@ internal class Day04 : DayBase {
         return (((above << 16 | above >>> 16) ^ below) & MASK) == DIFF ? 1 : 0;
     }
 
-    public override object? Part1() {
+    public override object? Part1(bool print = true) {
         const uint FORWARD = 0x53_41_4D_58;
         const uint BACKWARD = 0x58_4D_41_53;
 
@@ -62,11 +62,12 @@ internal class Day04 : DayBase {
             }
         }
 
-        Console.WriteLine($"The total XMAS count is: {xmasCount}");
+        if (print)
+            Console.WriteLine($"The total XMAS count is: {xmasCount}");
         return xmasCount;
     }
 
-    public override object? Part2() {
+    public override object? Part2(bool print = true) {
         var crossMasCount = 0;
         var (maxX, maxStart) = (width - 1, grid.Length - width);
         for (var rowStart = width; rowStart < maxStart; rowStart += width) {
@@ -77,7 +78,8 @@ internal class Day04 : DayBase {
             }
         }
 
-        Console.WriteLine($"The total cross MAS count is: {crossMasCount}");
+        if (print)
+            Console.WriteLine($"The total cross MAS count is: {crossMasCount}");
         return crossMasCount;
     }
 }

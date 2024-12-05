@@ -82,13 +82,15 @@ internal class Day05 : DayBase {
         return curr;
     }
 
-    public override object? Part1() {
-        Console.WriteLine($"The sum of sorted center values is {sortedMidSum}");
+    public override object? Part1(bool print = true) {
+        if (print)
+            Console.WriteLine($"The sum of sorted center values is {sortedMidSum}");
         return sortedMidSum;
     }
 
-    public override object? Part2() {
-        Console.WriteLine($"The sum of unsorted center values is {unsortedMidSum}");
+    public override object? Part2(bool print = true) {
+        if (print)
+            Console.WriteLine($"The sum of unsorted center values is {unsortedMidSum}");
         return unsortedMidSum;
     }
 }

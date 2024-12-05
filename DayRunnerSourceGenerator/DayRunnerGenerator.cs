@@ -50,7 +50,9 @@ public class DayRunnerGenerator : IIncrementalGenerator {
         writer.WriteLine();
         WriteRunAllDays(writer, dayInfos);
         writer.WriteLine();
-        WriteRunDayByNumber(writer, dayInfos);
+        WriteRunDayByNumber(writer, dayInfos, true);
+        writer.WriteLine();
+        WriteRunDayByNumber(writer, dayInfos, false);
         writer.WriteLine();
         WriteGetDurationString(writer);
 
@@ -60,15 +62,15 @@ public class DayRunnerGenerator : IIncrementalGenerator {
         return sw.ToString();
     }
 
-    private static void WriteRunDayByNumber(IndentedTextWriter writer, in ImmutableArray<DayInfo> dayInfos) {
-        writer.WriteLine("public static void RunDay(int dayNumber) {");
+    private static void WriteRunDayByNumber(IndentedTextWriter writer, in ImmutableArray<DayInfo> dayInfos, bool print) {
+        writer.WriteLine($"public static void RunDay{(print ? "" : "NoPrint")}(int dayNumber) {{");
         ++writer.Indent;
 
         writer.WriteLine("switch (dayNumber) {");
         ++writer.Indent;
         foreach (var di in dayInfos.OrderBy(d => d.shortName)) {
             writer.Write($"case {ExtractNumber(di.shortName)}: ");
-            WriteRunBlock(writer, di);
+            WriteRunBlock(writer, di, true, print);
         }
         writer.WriteLine("""default: throw new ArgumentException("Invalid value passed in for dayNumber");""");
         --writer.Indent;
@@ -113,15 +115,18 @@ public class DayRunnerGenerator : IIncrementalGenerator {
         WriteRunBlock(writer, GetMax(dayInfos), false);
     }
 
-    private static void WriteRunBlock(IndentedTextWriter writer, in DayInfo dayInfo, bool returnAtEnd = true) {
+    private static void WriteRunBlock(IndentedTextWriter writer, in DayInfo dayInfo, bool returnAtEnd = true, bool print = true) {
         writer.WriteLine("{");
         ++writer.Indent;
-        writer.WriteLine($$"""Console.WriteLine("Running {{dayInfo.shortName}}:");""");
-        writer.WriteLine("var startTime = Stopwatch.GetTimestamp();");
+        if (print) {
+            writer.WriteLine($$"""Console.WriteLine("Running {{dayInfo.shortName}}:");""");
+            writer.WriteLine("var startTime = Stopwatch.GetTimestamp();");
+        }
         writer.WriteLine($"var day = new {dayInfo.qualifiedName}();");
-        writer.WriteLine("day.Part1();");
-        writer.WriteLine("day.Part2();");
-        writer.WriteLine("""Console.WriteLine($"Finished in {GetDurationString(Stopwatch.GetElapsedTime(startTime))}");""");
+        writer.WriteLine($"day.Part1({(print ? "true" : "false")});");
+        writer.WriteLine($"day.Part2({(print ? "true" : "false")});");
+        if (print)
+            writer.WriteLine("""Console.WriteLine($"Finished in {GetDurationString(Stopwatch.GetElapsedTime(startTime))}");""");
         if (returnAtEnd)
             writer.WriteLine("return;");
         --writer.Indent;

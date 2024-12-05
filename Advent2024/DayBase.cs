@@ -4,8 +4,8 @@ public abstract class DayBase : IDay {
     protected DayBase() {
     }
 
-    public virtual object? Part1() => default;
-    public virtual object? Part2() => default;
+    public virtual object? Part1(bool print = true) => default;
+    public virtual object? Part2(bool print = true) => default;
 
     protected string GetDataFilePath() {
         var directory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);

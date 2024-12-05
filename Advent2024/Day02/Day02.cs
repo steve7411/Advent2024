@@ -33,14 +33,16 @@ internal class Day02 : DayBase {
         return (1, i);
     }
 
-    public override object? Part1() {
-        Console.WriteLine($"The number of safe reports is: {safeCount}");
+    public override object? Part1(bool print = true) {
+        if (print)
+            Console.WriteLine($"The number of safe reports is: {safeCount}");
         return safeCount;
     }
 
-    public override object? Part2() {
+    public override object? Part2(bool print = true) {
         var total = safeCount + safeCount1Removal;
-        Console.WriteLine($"The number of safe reports after max 1 removal is: {total}");
+        if (print)
+            Console.WriteLine($"The number of safe reports after max 1 removal is: {total}");
         return total;
     }
 }
