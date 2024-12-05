@@ -1,14 +1,17 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace Advent2024.Day05;
 
 internal class Day05 : DayBase {
-    private readonly ulong[] adjacency = new ulong[200];
-    private readonly List<byte[]> updates = new(190);
+    private readonly int sortedMidSum = 0;
+    private readonly int unsortedMidSum = 0;
 
     public Day05() {
         using var reader = GetDataReader();
         var newLine = Environment.NewLine[0];
+        Span<ulong> adjacency = stackalloc ulong[200];
         while (reader.Peek() != newLine) {
             var left = reader.ReadNextInt();
             var right = reader.ReadNextInt();
@@ -18,14 +21,34 @@ internal class Day05 : DayBase {
         reader.ReadLine();
 
         Span<byte> buffer = stackalloc byte[23];
+        Span<ulong> set = stackalloc ulong[2];
         while (!reader.EndOfStream) {
-            var span = reader.ReadAllNumbersInLine(buffer);
-            updates.Add(span.ToArray());
+            (set[0], set[1]) = (0, 0);
+            var update = reader.ReadAllNumbersInLine(buffer);
+            if (IsSorted(set, update, adjacency))
+                sortedMidSum += update[update.Length >>> 1];
+            else
+                unsortedMidSum += GetSortedMid(set, update, adjacency);
         }
     }
 
-    private int GetSortedMid(Span<ulong> set, byte[] update) {
-        Span<ushort> counts = stackalloc ushort[100];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsSorted(Span<ulong> set, Span<byte> update, Span<ulong> adjacency) {
+        bool isSorted = true;
+        for (var i = update.Length - 1; i >= 0; --i) {
+            var curr = update[i];
+            if (isSorted) {
+                var adjSet = Vector128.LoadUnsafe(ref adjacency[curr << 1]);
+                var setVec = Vector128.LoadUnsafe(ref set[0]);
+                isSorted &= (adjSet & setVec) == setVec;
+            }
+            set[curr >>> 6] |= 1UL << curr;
+        }
+        return isSorted;
+    }
+
+    private int GetSortedMid(Span<ulong> set, Span<byte> update, Span<ulong> adjacency) {
+        Span<byte> counts = stackalloc byte[100];
         Span<ulong> allDescendendents = stackalloc ulong[2];
         foreach (var n in update) {
             var adjOffset = n << 1;
@@ -39,8 +62,8 @@ internal class Day05 : DayBase {
         }
 
         var midIdx = update.Length >>> 1;
-        var diff0 = set[0] ^ allDescendendents[0] & set[0];
-        var next = diff0 == 0 ? 64 | BitOperations.TrailingZeroCount(set[1] ^ allDescendendents[1] & set[1]) : BitOperations.TrailingZeroCount(diff0);
+        var diff0 = set[0] & ~allDescendendents[0];
+        var next = diff0 == 0 ? 64 | BitOperations.TrailingZeroCount(set[1] & ~allDescendendents[1]) : BitOperations.TrailingZeroCount(diff0);
         var curr = -1;
         for (var j = midIdx; j >= 0; --j) {
             curr = next;
@@ -60,46 +83,12 @@ internal class Day05 : DayBase {
     }
 
     public override object? Part1() {
-        Span<ulong> set = stackalloc ulong[2];
-        var sum = 0;
-        foreach (var update in updates) {
-            (set[0], set[1]) = (0, 0);
-            for (var i = update.Length - 1; i >= 0; --i) {
-                var curr = update[i];
-                var offset = curr << 1;
-                if ((adjacency[offset] & set[0]) != set[0] || (adjacency[offset + 1] & set[1]) != set[1])
-                    goto skip;
-                set[curr >>> 6] |= 1UL << curr;
-            }
-            sum += update[update.Length >>> 1];
-        skip:;
-        }
-
-        Console.WriteLine($"The sum of sorted center values is {sum}");
-        return sum;
+        Console.WriteLine($"The sum of sorted center values is {sortedMidSum}");
+        return sortedMidSum;
     }
 
     public override object? Part2() {
-        Span<ulong> currentSet = stackalloc ulong[2];
-        var sum = 0;
-        foreach (var update in updates) {
-            (currentSet[0], currentSet[1]) = (0, 0);
-            var isOrdered = true;
-            var midIdx = update.Length >>> 1;
-
-            for (var i = update.Length - 1; i >= 0; --i) {
-                var curr = update[i];
-                var offset = curr << 1;
-                isOrdered &= (adjacency[offset] & currentSet[0]) == currentSet[0];
-                isOrdered &= (adjacency[offset + 1] & currentSet[1]) == currentSet[1];
-                currentSet[curr >>> 6] |= 1UL << curr;
-            }
-
-            if (!isOrdered)
-                sum += GetSortedMid(currentSet, update);
-        }
-
-        Console.WriteLine($"The sum of unsorted center values is {sum}");
-        return sum;
+        Console.WriteLine($"The sum of unsorted center values is {unsortedMidSum}");
+        return unsortedMidSum;
     }
 }
