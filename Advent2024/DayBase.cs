@@ -39,7 +39,9 @@ public abstract class DayBase : IDay {
             }
                 
         }
-        ReadOnlySpan<string> paths = [dir, "..", "..", "..", "..", typeName, "Data.txt"];
-        File.Copy(path, Path.Combine(paths), true);
+        ReadOnlySpan<string> paths = [dir, "..", "..", "..", "..", typeName];
+        var copyDir = Path.Combine(paths);
+        if (Directory.Exists(copyDir))
+            File.Copy(path, Path.Combine(copyDir, "Data.txt"), true);
     }
 }
