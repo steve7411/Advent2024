@@ -28,6 +28,21 @@ public static class TextReaderExtensions {
         return (ParseNumber<T>(buffer[..(bufferPos + 1)]), nextVal);
     }
 
+    public static (T parsed, int length, int lastRead) ReadNextNumberWithLen<T>(this TextReader r) where T : ISpanParsable<T> {
+        // Should be enough space for up to long.MinValue
+        Span<char> buffer = stackalloc char[20];
+        var bufferPos = -1;
+        int nextVal = r.ReadToNonWhiteSpace();
+        while (nextVal != -1 && !char.IsWhiteSpace((char)nextVal) &&
+            (char.IsDigit((char)nextVal) || (bufferPos == -1 && (nextVal is '-' or '+')))) {
+            buffer[++bufferPos] = (char)nextVal;
+            nextVal = r.Read();
+        }
+        ConsumeFullNewLine(r, nextVal);
+        var len = bufferPos + 1;
+        return (ParseNumber<T>(buffer[..len]), len, nextVal);
+    }
+
     private static T ParseNumber<T>(ReadOnlySpan<char> chars) where T : ISpanParsable<T> =>
         T.Parse(chars, CultureInfo.InvariantCulture.NumberFormat);
 
