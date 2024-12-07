@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Advent2024.Day06;
@@ -7,8 +6,7 @@ namespace Advent2024.Day06;
 using Vec2D = Vector2D<int>;
 
 [InlineArray(4)]
-[DebuggerDisplay("(N: {north} E: {System.Runtime.CompilerServices.Unsafe.Add(ref north, 1)} S: {System.Runtime.CompilerServices.Unsafe.Add(ref north, 2)} W: {System.Runtime.CompilerServices.Unsafe.Add(ref north, 3)})")]
-internal struct AdjacencyNode { public Vec2D north; }
+internal struct AdjacencyNode { public short north; }
 
 internal unsafe struct Map {
     [InlineArray(130)]
@@ -31,13 +29,13 @@ internal unsafe struct Map {
     public Map(StreamReader reader, int width, Span<AdjacencyNode> adjacencies, ref Vec2D startPos) {
         var prev = adjacencies;
         for (var i = 0; i < width; ++i)
-            prev[i].north = new(i, -1);
+            prev[i].north = -1;
 
         var cellBlockCount = (width >>> 5) + 1;
         for (var y = 0; !reader.EndOfStream; ++y) {
             ref var row = ref rows[y];
             var x = 0;
-            Vec2D left = new(-1, y);
+            short left = -1;
             for (var i = 0; i < cellBlockCount; ++i) {
                 var ub = Math.Min(x + 32, width);
                 for (ref var currCells = ref row.cells[i]; x < ub; ++x) {
@@ -51,8 +49,8 @@ internal unsafe struct Map {
 
                     ref var adj = ref adjacencies[x];
                     if (bit == 1) {
-                        adj[(int)Direction.North] = new(x, y + 1);
-                        adj[(int)Direction.West] = left = new(x + 1, y);
+                        adj[(int)Direction.North] = (short)(y + 1);
+                        adj[(int)Direction.West] = left = (short)(x + 1);
                     } else {
                         adj[(int)Direction.North] = prev[x].north;
                         adj[(int)Direction.West] = left;
@@ -76,7 +74,7 @@ internal unsafe struct Map {
 }
 
 
-internal class Day06 : DayBase {
+internal sealed class Day06 : DayBase {
     private readonly int width;
     private readonly int height;
     private readonly Map map;
@@ -98,15 +96,15 @@ internal class Day06 : DayBase {
     private void PopulateEastSouthAdjacencies() {
         var prev = MemoryMarshal.CreateSpan(ref adjacencies[height - 1, 0], width);
         for (var i = 0; i < width; ++i)
-            prev[i][(int)Direction.South] = new(i, height);
+            prev[i][(int)Direction.South] = (short)height;
 
         for (var y = height - 1; y >= 0; --y) {
-            Vec2D right = new(width, y);
+            var right = (short)width;
             for (var x = width - 1; x >= 0; --x) {
                 ref var adj = ref adjacencies[y, x];
                 if (map[x, y]) {
-                    adj[(int)Direction.South] = new(x, y - 1);
-                    adj[(int)Direction.East] = right = new(x - 1, y);
+                    adj[(int)Direction.South] = (short)(y - 1);
+                    adj[(int)Direction.East] = right = (short)(x - 1);
                 } else {
                     adj[(int)Direction.South] = prev[x][(int)Direction.South];
                     adj[(int)Direction.East] = right;
@@ -133,22 +131,26 @@ internal class Day06 : DayBase {
         return (write + 1, uniqueCount);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static bool FallsBetween(Vec2D point1, Vec2D point2, Vec2D test, int dim) =>
         point1[dim ^ 1] == test[dim ^ 1] && Math.Sign(point1[dim] - test[dim]) != Math.Sign(point2[dim] - test[dim]);
 
-    private int IsCycle(Vec2D pos, Vec2D blockage, Direction dir, HashSet<(Vec2D pos, Direction dir)> visited) {
-        visited.Add((pos, dir));
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private int IsCycle(Vec2D pos, Vec2D blockage, Direction dir) {
+        Span<Map> visited = stackalloc Map[4];
+        visited[(int)dir][pos.x, pos.y] = true;
         dir = dir.RightOf();
         while (true) {
-            var next = adjacencies[pos.y, pos.x][(int)dir];
-            if (FallsBetween(pos, next, blockage, ~(int)dir & 1))
+            int dim = ~(int)dir & 1;
+            var nextCoord = adjacencies[pos.y, pos.x][(int)dir];
+            Vec2D next = dim == 0 ? new(nextCoord, pos.y) : new(pos.x, nextCoord);
+            if (FallsBetween(pos, next, blockage, dim))
                 next = blockage - dir.ToDirVector<int>(false);
 
             if ((uint)next.x >= (uint)width | (uint)next.y >= (uint)height)
                 return 0;
 
-            if (!visited.Add((next, dir)))
+            if (visited[(int)dir].Add(pos) == 0)
                 return 1;
 
             dir = dir.RightOf();
@@ -164,14 +166,11 @@ internal class Day06 : DayBase {
 
     public unsafe override object? Part2(bool print = true) {
         var count = 0;
-        Parallel.For(0, pathLen - 1, new ParallelOptions() { MaxDegreeOfParallelism = -1 }, () => (total: 0, set: new HashSet<(Vec2D, Direction)>()), (i, _, state) => {
+        Parallel.For(0, pathLen - 1, new ParallelOptions() { MaxDegreeOfParallelism = -1 }, () => 0, (i, _, runningTotal) => {
             var (pos, _, dir) = path[i];
             var (blockage, isFirst, _) = path[i + 1];
-
-            var newTotal = state.total + (isFirst == 0 ? 0 : IsCycle(pos, blockage, dir, state.set));
-            state.set.Clear();
-            return (newTotal, state.set);
-        }, s => Interlocked.Add(ref count, s.total));
+            return runningTotal + (isFirst == 0 ? 0 : IsCycle(pos, blockage, dir));
+        }, s => Interlocked.Add(ref count, s));
 
         if (print)
             Console.WriteLine($"The number of possible loop locations is: {count}");
