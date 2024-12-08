@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace Advent2024;
 
-public readonly struct IntRect2D<T> where T: INumber<T> {
+public readonly struct Rect2D<T> where T: INumber<T> {
     [Flags]
     public enum SpatialRelation {
         Inside       = 0,
@@ -18,19 +18,13 @@ public readonly struct IntRect2D<T> where T: INumber<T> {
     public readonly Vector2D<T> minPoint;
     public readonly Vector2D<T> maxPoint;
 
-    //private IntRect2D(IntVector2D minPoint, IntVector2D maxPoint) {
-    //    this.minPoint = minPoint;
-    //    this.maxPoint = maxPoint;
-    //    size = maxPoint - minPoint;
-    //}
-
-    private IntRect2D(Vector2D<T> minPoint, Vector2D<T> maxPoint, Vector2D<T> size) {
+    private Rect2D(Vector2D<T> minPoint, Vector2D<T> maxPoint, Vector2D<T> size) {
         this.minPoint = minPoint;
         this.maxPoint = maxPoint;
         this.size = size;
     }
 
-    public IntRect2D(T x1, T x2, T y1, T y2) {
+    public Rect2D(T x1, T x2, T y1, T y2) {
         var start = new Vector2D<T>(x1, y1);
         var end = new Vector2D<T>(x2, y2);
         var size = end - start;
@@ -48,7 +42,7 @@ public readonly struct IntRect2D<T> where T: INumber<T> {
         new(size.x < T.Zero ? point.x + size.x : point.x, size.y < T.Zero ? point.y + size.y : point.y);
 
 
-    public static IntRect2D<T> From(Vector2D<T> point, Vector2D<T> size) {
+    public static Rect2D<T> From(Vector2D<T> point, Vector2D<T> size) {
         var (minPoint, maxPoint) = CalculateMinAndMax(point, size);
         return new(minPoint, maxPoint, size);
     }
@@ -58,8 +52,8 @@ public readonly struct IntRect2D<T> where T: INumber<T> {
         size = this.size;
     }
 
-    public static implicit operator IntRect2D<T>((Vector2D<T> point, Vector2D<T> size) tuple) => From(tuple.point, tuple.size);
-    public static implicit operator (Vector2D<T> point, Vector2D<T> size)(IntRect2D<T> rect) => (rect.minPoint, rect.size);
+    public static implicit operator Rect2D<T>((Vector2D<T> point, Vector2D<T> size) tuple) => From(tuple.point, tuple.size);
+    public static implicit operator (Vector2D<T> point, Vector2D<T> size)(Rect2D<T> rect) => (rect.minPoint, rect.size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Contains(Vector2D<T> point) =>
@@ -73,12 +67,12 @@ public readonly struct IntRect2D<T> where T: INumber<T> {
     }
 
     public override int GetHashCode() => HashCode.Combine(minPoint, maxPoint);
-    public override bool Equals([NotNullWhen(true)] object? obj) => obj is IntRect2D<T> other && this == other;
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is Rect2D<T> other && this == other;
 
-    public static bool operator !=(in IntRect2D<T> a, in IntRect2D<T> b) =>
+    public static bool operator !=(in Rect2D<T> a, in Rect2D<T> b) =>
         a.minPoint != b.minPoint || a.maxPoint != b.maxPoint;
 
-    public static bool operator ==(in IntRect2D<T> a, in IntRect2D<T> b) =>
+    public static bool operator ==(in Rect2D<T> a, in Rect2D<T> b) =>
         a.minPoint == b.minPoint && a.maxPoint == b.maxPoint;
 
     public override string ToString() => $"{{min: {minPoint}, max: {maxPoint}}}";
