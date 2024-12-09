@@ -12,11 +12,13 @@ public abstract class DayBase : IDay {
         return Path.Combine(directory ?? throw new Exception($"Directory returned was null"), Path.Combine(GetType().Name, "Data.txt"));
     }
 
-    protected StreamReader GetDataReader() {
+    protected StreamReader GetDataReader() => new(GetDataStream());
+
+    protected FileStream GetDataStream() {
         var path = GetDataFilePath();
         if (!File.Exists(path))
             DownloadData();
-        return new(path);
+        return File.OpenRead(path);
     }
 
     private void DownloadData() {

@@ -19,15 +19,16 @@ public static class StreamExtensions {
         //Read past byte order mark (BOM), if present
         while (stream.Position < stream.Length && !isPrintableAsciiCharacter(lastChar = stream.ReadByte())) ;
         long firstCharPosition = stream.Position - 1;
-        while (stream.Position < stream.Length && (lastChar = stream.ReadByte()) is not '\r' and not '\n') ;
+        while ((lastChar = stream.ReadByte()) is not (-1 or '\r' or '\n')) ;
+        var foundNewLine = lastChar != -1;
         //Read to end of newline sequence if it's more than one byte
         if (lastChar == Environment.NewLine[0]) {
             var newLineIndex = 1;
             while (stream.Position < stream.Length && (lastChar = stream.ReadByte()) != -1 && newLineIndex < Environment.NewLine.Length && lastChar == Environment.NewLine[newLineIndex++]) ;
         }
-        long newPosition = stream.Position - (stream.Position == stream.Length - 1 ? 0 : 1);
+        long newPosition = stream.Position - (!foundNewLine | stream.Position == stream.Length - 1 ? 0 : 1);
         var lineLength = (int)(newPosition - firstCharPosition);
         stream.Seek(startingPosition, SeekOrigin.Begin);
-        return (lineLength - Environment.NewLine.Length, firstCharPosition);
+        return (lineLength - (foundNewLine ? Environment.NewLine.Length : 0), firstCharPosition);
     }
 }
