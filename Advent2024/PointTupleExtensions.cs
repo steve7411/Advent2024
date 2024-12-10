@@ -1,11 +1,8 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace Advent2024;
 public static class PointTupleExtensions {
-    public static (float x, float y) Add(this (float x, float y) a, (float x, float y) b) {
-        return (a.x + b.x, a.y + b.y);
-    }
+    public static ValueTuple<T, T> Add<T>(this (T l, T r) lhs, (T l, T r) rhs) where T : INumber<T> => (lhs.l + rhs.l, lhs.r + rhs.r);
 
     public static (float x, float y) Subtract(this (float x, float y) a, (float x, float y) b) {
         return (a.x - b.x, a.y - b.y);

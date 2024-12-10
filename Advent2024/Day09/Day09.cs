@@ -20,8 +20,8 @@ internal class Day09 : DayBase {
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void TruncateToDigitValue(Span<byte> bytes) {
-        Vector<byte> vec;
-        Vector<byte> vec2;
+        Unsafe.SkipInit(out Vector<byte> vec);
+        Unsafe.SkipInit(out Vector<byte> vec2);
         Vector<byte> mask = new(0xF);
         var remaining = bytes.Length;
         ref var first = ref bytes[0];
