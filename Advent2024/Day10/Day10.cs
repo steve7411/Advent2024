@@ -24,11 +24,12 @@ internal class Day10 : DayBase {
         (scoreSum, ratingSum) = Avx2.IsSupported ? CalculateScoresAndRatingsAvx2(grid) : CalculateScoresAndRatingsSerial(grid, 0, true);
     }
 
-    private (int scores, int ratings) CalculateScoresAndRatingsAvx2(byte[] grid) {
+    private unsafe (int scores, int ratings) CalculateScoresAndRatingsAvx2(byte[] grid) {
         var resultAvx = (score: 0, rating: 0);
         void doAvx() {
             Parallel.For(0, grid.Length >>> 5, new ParallelOptions() { MaxDegreeOfParallelism = -1 }, () => (set: new ulong[25], score: 0, rating: 0), (batchNum, _, state) => {
-                var zeroReg = new Vector<byte>((byte)'0').AsVector256();
+                var zero = (byte)'0';
+                var zeroReg = Avx2.BroadcastScalarToVector256(&zero);
                 var idx = batchNum << 5;
                 var reg = Avx2.CompareEqual(Unsafe.ReadUnaligned<Vector256<byte>>(ref grid[idx]), zeroReg);
                 var bits = Avx2.MoveMask(reg);
