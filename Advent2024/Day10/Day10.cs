@@ -12,13 +12,14 @@ internal class Day10 : DayBase {
     private readonly int ratingSum;
 
     public Day10() {
-        using var reader = GetDataReader();
-        (width, height) = reader.BaseStream.GetLineInfoForRegularFile();
+        using var stream = GetDataStream();
+        (width, height) = stream.GetLineInfoForRegularFile();
         var grid = GC.AllocateUninitializedArray<byte>(width * height);
+        Span<byte> newLineDump = stackalloc byte[Environment.NewLine.Length];
         Span<byte> span = grid;
-        while (!reader.EndOfStream) {
-            reader.Read(span[..width]);
-            reader.ConsumeFullNewLine(reader.Read());
+        while (stream.Position < stream.Length) {
+            _ = stream.Read(span[..width]);
+            _ = stream.Read(newLineDump);
             span = span[width..];
         }
         (scoreSum, ratingSum) = Avx2.IsSupported ? CalculateScoresAndRatingsAvx2(grid) : CalculateScoresAndRatingsSerial(grid, 0, true);
