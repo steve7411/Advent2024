@@ -10,13 +10,13 @@ public enum Direction : byte {
 }
 
 public static class DirectionExtensions {
-    private static readonly int directionCount = Enum.GetValues<Direction>().Length;
+    private const int MOD_MASK = 0x3;
 
-    public static Direction LeftOf(this Direction direction) => (Direction)(((int)direction + directionCount - 1) % directionCount);
+    public static Direction LeftOf(this Direction direction) => (Direction)(((int)direction + MOD_MASK) & MOD_MASK);
 
-    public static Direction RightOf(this Direction direction) => (Direction)(((int)direction + 1) % directionCount);
+    public static Direction RightOf(this Direction direction) => (Direction)(((int)direction + 1) & MOD_MASK);
 
-    public static Direction Inverse(this Direction direction) => (Direction)(((int)direction + 2) % directionCount);
+    public static Direction Inverse(this Direction direction) => (Direction)(((int)direction + 2) & MOD_MASK);
 
     public static Vector2D<T> ToDirVector<T>(this Direction direction, bool northPositive = true) where T : INumber<T> {
         return direction switch {
@@ -31,7 +31,7 @@ public static class DirectionExtensions {
     }
 
     public static Direction TurnByDegrees(this Direction direction, int degrees) {
-        var turnCount= Math.DivRem(degrees, 90, out var remainder) % 4;
+        var turnCount = Math.DivRem(degrees, 90, out var remainder) & 3;
         if (remainder != 0)
             throw new Exception("Unable to convert degrees to turns");
         return Math.Abs(turnCount) switch {
