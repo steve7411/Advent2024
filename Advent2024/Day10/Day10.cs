@@ -85,20 +85,11 @@ internal class Day10 : DayBase {
             return (isNew, 1);
 
         var next = val + 1;
-<<<<<<< Updated upstream
-        var res = CalculateScoreAndRating(x, y - 1, next, set)
-            .Add(CalculateScoreAndRating(x - 1, y, next, set))
-            .Add(CalculateScoreAndRating(x + 1, y, next, set))
-            .Add(CalculateScoreAndRating(x, y + 1, next, set));
-
-        return (-isNew & res.Item1, res.Item2);
-=======
         var res = CalculateScoreAndRating(grid, x, y - 1, next, set)
             .Add(CalculateScoreAndRating(grid, x - 1, y, next, set))
             .Add(CalculateScoreAndRating(grid, x + 1, y, next, set))
             .Add(CalculateScoreAndRating(grid, x, y + 1, next, set));
         return (-isNew & res.x, res.y);
->>>>>>> Stashed changes
     }
 
     [SkipLocalsInit]
