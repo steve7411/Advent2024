@@ -2,6 +2,7 @@
 
 using IntType = long;
 using FloatType = double;
+using System.Runtime.CompilerServices;
 
 namespace Advent2024.Day11;
 
@@ -25,23 +26,41 @@ internal class Day11 : DayBase {
         if (iterations == 0)
             return 1;
 
-        var memo = memos[iterations];
-        ref var cached = ref CollectionsMarshal.GetValueRefOrAddDefault(memo, n, out _);
-        var cachedCount = memo.Count;
+        ref var cached = ref CollectionsMarshal.GetValueRefOrAddDefault(memos[iterations], n, out _);
         if (cached != 0)
             return cached;
 
         if (n == 0)
             return cached = Simulate(1, iterations - 1);
 
-        var floorLog = (IntType)FloatType.Log10(n);
-        if ((floorLog & 1) == 1) {
-            var half = floorLog + 1 >>> 1;
+        var digitCount = DigitCount(n);
+        if ((digitCount & 1) == 0) {
+            var half = digitCount >>> 1;
             var pow = powTens[(int)half];
             var (l, r) = IntType.DivRem(n, pow);
             return cached = Simulate(l, iterations - 1) + Simulate(r, iterations - 1);
         }
         return cached = Simulate(n * 2024, iterations - 1);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private IntType DigitCount(IntType n) {
+        return n switch {
+            < 10 => 1,
+            < 100 => 2,
+            < 1_000 => 3,
+            < 10_000 => 4,
+            < 100_000 => 5,
+            < 1_000_000 => 6,
+            < 10_000_000 => 7,
+            < 100_000_000 => 8,
+            < 1_000_000_000 => 9,
+            < 10_000_000_000 => 10,
+            < 100_000_000_000 => 11,
+            < 1_000_000_000_000 => 12,
+            < 10_000_000_000_000 => 13,
+            _ => 14,
+        };
     }
 
     private IntType RunSimulations(int simulationCount) {
