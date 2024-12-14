@@ -14,11 +14,12 @@ public static class StreamExtensions {
     public static (int lineLength, long firstCharacterPosition) GetRemainingCharacterCountInLine(this Stream stream) {
         long startingPosition = stream.Position;
         stream.Seek(0, SeekOrigin.Begin);
-        static bool isPrintableAsciiCharacter(int x) => x >= ' ' && x <= '~';
+        static bool isPrintableAsciiCharacter(int x) => x is (>= ' ' and <= '~');
+
         int lastChar = -1;
         //Read past byte order mark (BOM), if present
         while (stream.Position < stream.Length && !isPrintableAsciiCharacter(lastChar = stream.ReadByte())) ;
-        long firstCharPosition = stream.Position - 1;
+        var firstCharPosition = stream.Position - 1;
         while ((lastChar = stream.ReadByte()) is not (-1 or '\r' or '\n')) ;
         var foundNewLine = lastChar != -1;
         //Read to end of newline sequence if it's more than one byte
@@ -26,7 +27,7 @@ public static class StreamExtensions {
             var newLineIndex = 1;
             while (stream.Position < stream.Length && (lastChar = stream.ReadByte()) != -1 && newLineIndex < Environment.NewLine.Length && lastChar == Environment.NewLine[newLineIndex++]) ;
         }
-        long newPosition = stream.Position - (!foundNewLine | stream.Position == stream.Length - 1 ? 0 : 1);
+        var newPosition = stream.Position - (foundNewLine ? 1 : 0);
         var lineLength = (int)(newPosition - firstCharPosition);
         stream.Seek(startingPosition, SeekOrigin.Begin);
         return (lineLength - (foundNewLine ? Environment.NewLine.Length : 0), firstCharPosition);

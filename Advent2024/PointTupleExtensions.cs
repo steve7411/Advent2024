@@ -19,6 +19,8 @@ public static class PointTupleExtensions {
 
     public static T Dot<T>(this (T x, T y) lhs, (T x, T y) rhs) where T : INumber<T> => lhs.x * rhs.x + lhs.y * rhs.y;
 
+    public static (T x, T y, T z) Add<T>(this (T x, T y, T z) lhs, (T x, T y, T z) rhs) where T : INumber<T> => (lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
+    
     public static (T x, T y, T z) Subtract<T>(this (T x, T y, T z) lhs, (T x, T y, T z) rhs) where T : INumber<T> => (lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
 
     public static T Dot<T>(this (T x, T y, T z) lhs, (T x, T y, T z) rhs) where T : INumber<T> => lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
