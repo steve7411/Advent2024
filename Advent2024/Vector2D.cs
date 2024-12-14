@@ -55,10 +55,13 @@ public readonly struct Vector2D<T> : IEnumerable<T>, IEquatable<Vector2D<T>> whe
     public static Vector2D<float> operator -(in Vector2D<T> a, in Vector2D<float> b) => Subtract(a, b);
     public static Vector2D<double> operator -(in Vector2D<T> a, in Vector2D<double> b) => Subtract(a, b);
     public static Vector2D<T> operator +(in Vector2D<T> a, in Vector2D<T> b) => new(a.x + b.x, a.y + b.y);
+    public static Vector2D<T> operator /(in Vector2D<T> a, in Vector2D<T> b) => new(a.x / b.x, a.y / b.y);
+    public static Vector2D<T> operator /(in Vector2D<T> a, T scalar) => new(a.x / scalar, a.y / scalar);
     public static double operator *(in Vector2D<T> a, in Vector2D<T> b) => Dot<double>(a, b);
     public static Vector2D<T> operator *(in Vector2D<T> a, T scalar) => new(a.x * scalar, a.y * scalar);
     public static (float x, float y) operator *(in Vector2D<T> a, float scalar) => Scale(a, scalar);
     public static Vector2D<T> operator %(in Vector2D<T> a, in Vector2D<T> b) => new(a.x % b.x, a.y % b.y);
+    public static Vector2D<T> operator %(in Vector2D<T> a, T scalar) => new(a.x % scalar, a.y % scalar);
 
     private static Vector2D<TFloat> Subtract<TFloat>(in Vector2D<T> a, in Vector2D<TFloat> b) where TFloat : IFloatingPoint<TFloat> => new(TFloat.CreateChecked(a.x) - b.x, TFloat.CreateChecked(a.y) - b.y);
     private static Vector2D<TFloat> Scale<TFloat>(in Vector2D<T> a, TFloat scalar) where TFloat : IFloatingPoint<TFloat> => new(TFloat.CreateChecked(a.x) * scalar, TFloat.CreateChecked(a.y) * scalar);
@@ -67,6 +70,9 @@ public readonly struct Vector2D<T> : IEnumerable<T>, IEquatable<Vector2D<T>> whe
     public static T Cross(in Vector2D<T> a, in Vector2D<T> b) => a.x * b.y - a.y * b.x;
 
     public Vector2D<T> Abs() => new(T.Abs(x), T.Abs(y));
+    
+    public T Min() => T.Min(x, y);
+    public T Max() => T.Max(x, y);
 
     public T ManhattanDistanceTo(in Vector2D<T> b) => T.Abs(x - b.x) + T.Abs(y - b.y);
 
