@@ -13,7 +13,7 @@ internal class Day12 : DayBase {
 
         public ulong this[int index] {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (cells[index >>> 6] >>> index) & 1;
+            get => cells[index >>> 6] >>> index & 1;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => cells[index >>> 6] |= value << index;
@@ -92,14 +92,14 @@ internal class Day12 : DayBase {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public uint GetBits(int index, uint mask = 3) {
+        public uint GetBitPair(int index) {
             // Only works on little endian
             var byteOffset = index >>> 3;
             var shift = index & 7;
             // Take the hit of unaligned reads to get the CPU to shift out
             // any bit pairs that span a 64 bit boundary
             fixed (ulong* ptr = cells)
-                return *(uint*)((byte*)ptr + byteOffset) >>> shift & mask;
+                return *(uint*)((byte*)ptr + byteOffset) >>> shift & 3;
         }
 
 #if DEBUG
@@ -174,58 +174,64 @@ internal class Day12 : DayBase {
 
     private (Num normal, Num bulk) CalculateFenceCosts() {
         var costs = (normal: (Num)0, bulk: (Num)0);
-        Span<ulong> visited = stackalloc ulong[(grid.Length >>> 6) + (-(grid.Length & 0x3F) >>> 63)];
+        Span<ulong> visitedSpan = stackalloc ulong[(grid.Length >>> 6) + (-(grid.Length & 0x3F) >>> 63)];
+        ref var visited = ref visitedSpan[0];
         for (var y = 0; y < height; ++y) {
             var row = grid.AsSpan(y * width);
+            var prev = 0;
             for (var x = 0; x < width; ++x) {
-                var (p, a, c) = Flood(x, y, row[x], visited);
-                costs.normal += p * a;
-                costs.bulk += c * a;
+                int curr = row[x];
+                if (prev != curr) {
+                    var (p, a, c) = ((Num)0, (Num)0, (Num)0);
+                    Flood(x, y, ref visited, ref p, ref a, ref c);
+                    costs.normal += p * a;
+                    costs.bulk += c * a;
+                }
+                prev = curr;
             }
         }
         return costs;
     }
 
-    private Num GetCornerCount(int x, int y) {
-        var aboveVert = verticalDiffs[y].GetBits(x, 1);
-        var belowVert = verticalDiffs[y + 1].GetBits(x, 1);
+    private (Num corners, ulong edges) GetCornerCountAndEdges(int x, int y) {
+        var aboveVert = verticalDiffs[y][x];
+        var belowVert = verticalDiffs[y + 1][x];
         var aboveVertSpread = aboveVert | aboveVert << 1;
         var belowVertSpread = belowVert | belowVert << 1;
 
-        var sides = horizontalDiffs[y].GetBits(x);
+        var sides = horizontalDiffs[y].GetBitPair(x);
 
-        var aboveInner = insideCorners[y].GetBits(x);
-        var belowInner = insideCorners[y + 1].GetBits(x);
-        uint aboveExterior = aboveVertSpread & sides;
-        uint belowExterior = belowVertSpread & sides;
-        uint aboveInterior = aboveInner & ~(aboveVertSpread | sides);
-        uint belowInterior = belowInner & ~(belowVertSpread | sides);
-        return BitOperations.PopCount(aboveExterior | belowExterior << 2 | aboveInterior << 4 | belowInterior << 6);
+        var aboveInsideBits = insideCorners[y].GetBitPair(x);
+        var belowInsideBits = insideCorners[y + 1].GetBitPair(x);
+        var aboveExterior = aboveVertSpread & sides;
+        var belowExterior = belowVertSpread & sides;
+        var aboveInterior = aboveInsideBits & ~(aboveVertSpread | sides);
+        var belowInterior = belowInsideBits & ~(belowVertSpread | sides);
+        return (BitOperations.PopCount(aboveExterior | aboveInterior | (belowInterior | belowExterior) << 2), aboveVert | belowVert << 1 | sides << 2);
     }
 
-    private (Num perimeter, Num area, Num corners) Flood(int x, int y, byte expected, Span<ulong> visited) {
-        if ((uint)x >= (uint)width | (uint)y >= (uint)height)
-            return (1, 0, 0);
-
+    private unsafe void Flood(int x, int y, ref ulong visited, ref Num perim, ref Num area, ref Num corners) {
         var idx = y * width + x;
-        if (grid[idx] != expected)
-            return (1, 0, 0);
 
-        ref var setBits = ref visited[idx >>> 6];
+        ref var setBits = ref Unsafe.Add(ref visited, idx >>> 6);
         var currBit = 1UL << idx;
         if ((setBits & currBit) != 0)
-            return (0, 0, 0);
+            return;
 
         setBits |= currBit;
-        var cornerCount = GetCornerCount(x, y);
+        var (cornerCount, edges) = GetCornerCountAndEdges(x, y);
 
-        var totals = Flood(x, y - 1, expected, visited)
-            .Add(Flood(x - 1, y, expected, visited))
-            .Add(Flood(x + 1, y, expected, visited))
-            .Add(Flood(x, y + 1, expected, visited))
-            .Add((0, 1, cornerCount));
-
-        return totals;
+        corners += cornerCount;
+        ++area;
+        perim += BitOperations.PopCount(edges);
+        if ((edges & 1) == 0)
+            Flood(x, y - 1, ref visited, ref perim, ref area, ref corners);
+        if ((edges & 4) == 0)
+            Flood(x - 1, y, ref visited, ref perim, ref area, ref corners);
+        if ((edges & 8) == 0)
+            Flood(x + 1, y, ref visited, ref perim, ref area, ref corners);
+        if ((edges & 2) == 0)
+            Flood(x, y + 1, ref visited, ref perim, ref area, ref corners);
     }
 
     public override object? Part1(bool print = true) {
@@ -236,7 +242,7 @@ internal class Day12 : DayBase {
 
     public override object? Part2(bool print = true) {
         if (print)
-            Console.WriteLine($"The cost to fence the garden: {bulkCost}");
+            Console.WriteLine($"The cost to fence the garden with bulk pricing: {bulkCost}");
         return bulkCost;
     }
 }
